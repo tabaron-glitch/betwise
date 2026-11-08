@@ -35,6 +35,13 @@ def test_cierre_toma_ultima_activa_antes_del_inicio():
     assert c["min_before_ko"] == pytest.approx(20.0)
 
 
+def test_apertura_y_cuota_vigente_a_una_hora():
+    a = op.closing_prices(HIST, START, which="first")
+    assert (a["o_h"], a["o_d"], a["o_a"]) == (1.50, 4.50, 6.90)
+    v = op.closing_prices(HIST, "2026-04-11T11:15:00Z")  # vigente a las 11:15
+    assert (v["o_h"], v["o_d"], v["o_a"]) == (1.50, 4.50, 6.90)
+
+
 def test_cierre_sin_datos_del_bookmaker():
     c = op.closing_prices({"bookmakers": {}}, START)
     assert math.isnan(c["o_h"]) and c["quote_time"] == ""

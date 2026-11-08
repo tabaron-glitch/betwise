@@ -85,8 +85,11 @@ class Client:
             self._last = time.monotonic()
 
 
-def closing_prices(hist: dict, start_time, bookmaker: str = "pinnacle") -> dict:
-    """Extrae la cuota de cierre de cada resultado a partir de la respuesta de historical-odds."""
+def closing_prices(hist: dict, start_time, bookmaker: str = "pinnacle", which: str = "last") -> dict:
+    """Cuotas a partir de la respuesta de historical-odds, solo con cotizaciones ACTIVAS
+    anteriores a `start_time`. which="last": la última (cierre, o la vigente a una hora dada);
+    which="first": la primera publicada (apertura)."""
+    first = which == "first"
     start = pd.Timestamp(start_time)
     start = start.tz_localize("UTC") if start.tzinfo is None else start.tz_convert("UTC")
     out = {c: float("nan") for c in PRICE_COLS}
@@ -102,14 +105,15 @@ def closing_prices(hist: dict, start_time, bookmaker: str = "pinnacle") -> dict:
                     continue
                 ts = pd.Timestamp(r["createdAt"])
                 ts = ts.tz_localize("UTC") if ts.tzinfo is None else ts.tz_convert("UTC")
-                if ts < start and (best is None or ts > best[0]):
+                if ts < start and (best is None or (ts < best[0] if first else ts > best[0])):
                     best = (ts, float(r["price"]))
             if best and best[1] > 1.0:
                 out[col] = best[1]
                 last_ts[col] = best[0]
     one_x_two = [last_ts[c] for c in ("o_h", "o_d", "o_a") if c in last_ts]
-    out["quote_time"] = min(one_x_two).isoformat() if len(one_x_two) == 3 else ""
-    out["min_before_ko"] = (start - min(one_x_two)).total_seconds() / 60 if len(one_x_two) == 3 else float("nan")
+    ref = (max(one_x_two) if first else min(one_x_two)) if len(one_x_two) == 3 else None
+    out["quote_time"] = ref.isoformat() if ref is not None else ""
+    out["min_before_ko"] = (start - ref).total_seconds() / 60 if ref is not None else float("nan")
     return out
 
 
