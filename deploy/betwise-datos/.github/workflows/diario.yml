@@ -27,7 +27,7 @@ jobs:
       - name: Código (repositorio público)
         uses: actions/checkout@v4
         with:
-          repository: USUARIO_GITHUB/betwise
+          repository: tabaron-glitch/betwise
           path: code
 
       - uses: actions/setup-python@v5
