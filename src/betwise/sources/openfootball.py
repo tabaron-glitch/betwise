@@ -109,3 +109,11 @@ def load_results(divs, seasons, cache_dir="data/raw/openfootball", refresh_seaso
     if dup.any():
         raise ValueError(f"openfootball: {int(dup.sum())} partidos duplicados")
     return out.sort_values(["date", "div", "home"]).reset_index(drop=True)
+
+
+def season_teams(div: str, season: str, cache_dir="data/raw/openfootball", refresh: bool = False) -> set:
+    """Todos los equipos del calendario de una temporada, jugados o no (sirve para equipos
+    recién ascendidos que aún no tienen resultados)."""
+    path = download_json(div, season, Path(cache_dir), refresh=refresh)
+    data = json.loads(path.read_text(encoding="utf-8"))
+    return {str(m[k]).strip() for m in data.get("matches", []) for k in ("team1", "team2")}

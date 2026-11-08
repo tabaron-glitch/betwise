@@ -144,6 +144,14 @@ def fixtures(client: Client, div: str, start: str, end: str, cache_dir: Path) ->
     return out
 
 
+def upcoming_fixtures(client: Client, div: str, now=None, days: int = 7) -> list:
+    """Partidos por jugar (statusId=0) de los próximos `days` días. 1 consulta facturable."""
+    now = pd.Timestamp.now(tz="UTC") if now is None else pd.Timestamp(now)
+    end = now + pd.Timedelta(days=days)
+    return client.get("fixtures", tournamentId=TOURNAMENTS[div], statusId=0,
+                      **{"from": f"{now:%Y-%m-%dT%H:%M:%SZ}", "to": f"{end:%Y-%m-%dT%H:%M:%SZ}"}) or []
+
+
 def update_closing(client: Client, div: str, start: str, end: str, cache_dir="data/raw/oddspapi",
                    verbose: bool = True) -> pd.DataFrame:
     """Actualiza la tabla de cierres de una liga. Solo consulta partidos que aún no están en ella."""
