@@ -25,6 +25,18 @@ def test_parse_formatos_de_marcador():
     assert (df["div"] == "E0").all() and (df["season"] == "2526").all()
 
 
+def test_corrige_anio_mal_escrito_solo_cuando_corresponde():
+    ts = of.pd.Timestamp
+    # caso real: Bournemouth 1-4 Newcastle se jugó el 1-jul-2020, el archivo dice 2019
+    assert of.fix_season_year(ts("2019-07-01"), "1920") == ts("2020-07-01")
+    assert of.fix_season_year(ts("2019-07-26"), "1920") == ts("2020-07-26")
+    assert of.fix_season_year(ts("2019-08-09"), "1920") == ts("2019-08-09")
+    assert of.fix_season_year(ts("2020-07-19"), "1920") == ts("2020-07-19")
+    data = {"matches": [{"date": "2019-07-01", "team1": "A", "team2": "B", "score": {"ft": [1, 4]}}]}
+    df, _ = of.parse(data, "E0", "1920")
+    assert df.date.iloc[0] == ts("2020-07-01") and df.attrs["fechas_corregidas"] == 1
+
+
 def test_season_folder():
     assert of.season_folder("2425") == "2024-25"
     assert of.season_folder("1920") == "2019-20"

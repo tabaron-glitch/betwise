@@ -50,16 +50,32 @@ def _final_score(score):
     return None
 
 
+def fix_season_year(date: pd.Timestamp, season: str) -> pd.Timestamp:
+    """Corrige un año mal escrito: una fecha anterior al 1 de agosto del año de inicio de la
+    temporada se pasa al año siguiente (caso real: Premier 2019/20, partidos de julio de 2020
+    publicados como julio de 2019). Fuera de ese caso la fecha no se toca."""
+    y0 = 2000 + int(season[:2])
+    if date < pd.Timestamp(y0, 8, 1):
+        fixed = date + pd.DateOffset(years=1)
+        if fixed <= pd.Timestamp(y0 + 1, 8, 31):
+            return fixed
+    return date
+
+
 def parse(data: dict, div: str, season: str) -> tuple[pd.DataFrame, int]:
-    """Convierte el JSON al esquema común. Devuelve (partidos jugados, n descartados sin marcador)."""
-    rows, skipped = [], 0
+    """Convierte el JSON al esquema común. Devuelve (partidos jugados, n descartados sin marcador).
+    El atributo df.attrs['fechas_corregidas'] cuenta las fechas con año corregido."""
+    rows, skipped, fixed = [], 0, 0
     for m in data.get("matches", []):
         sc = _final_score(m.get("score"))
         if sc is None:
             skipped += 1
             continue
+        raw_date = pd.Timestamp(m["date"])
+        date = fix_season_year(raw_date, season)
+        fixed += date != raw_date
         rows.append({
-            "date": pd.Timestamp(m["date"]),
+            "date": date,
             "div": div,
             "season": season,
             "home": str(m["team1"]).strip(),
@@ -72,6 +88,7 @@ def parse(data: dict, div: str, season: str) -> tuple[pd.DataFrame, int]:
     df = pd.DataFrame(rows, columns=cols)
     df["hg"] = df["hg"].astype(int)
     df["ag"] = df["ag"].astype(int)
+    df.attrs["fechas_corregidas"] = int(fixed)
     return df, skipped
 
 
@@ -84,6 +101,8 @@ def load_results(divs, seasons, cache_dir="data/raw/openfootball", refresh_seaso
             df, skipped = parse(json.loads(path.read_text(encoding="utf-8")), div, season)
             if verbose and skipped:
                 print(f"openfootball {div} {season}: {len(df)} jugados, {skipped} sin marcador (descartados)")
+            if verbose and df.attrs.get("fechas_corregidas"):
+                print(f"openfootball {div} {season}: {df.attrs['fechas_corregidas']} fechas con año corregido")
             frames.append(df)
     out = pd.concat(frames, ignore_index=True)
     dup = out.duplicated(["div", "date", "home", "away"])
