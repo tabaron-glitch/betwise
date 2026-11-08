@@ -54,8 +54,7 @@ def main():
         matches = load_matches(a.leagues, seasons, refresh_seasons=[seasons[-1]])
         test_start = a.test_start
 
-    print(f"Parámetros: xi={a.xi}, reg={a.reg}, ventana={a.window_days} días
-")
+    print(f"Parámetros: xi={a.xi}, reg={a.reg}, ventana={a.window_days} días\n")
     preds = walk_forward(matches, test_start=test_start, test_end=a.test_end, step_days=a.step_days,
                          xi=a.xi, reg=a.reg, window_days=a.window_days)
     out = Path(a.out)
