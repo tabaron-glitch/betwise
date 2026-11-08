@@ -1,0 +1,5 @@
+# En el repositorio privado solo se guarda el libro; las descargas se rehacen en cada corrida
+data/raw/
+code/
+__pycache__/
+.env

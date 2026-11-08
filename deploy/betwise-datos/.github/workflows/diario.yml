@@ -1,0 +1,52 @@
+# Plantilla para el repositorio PRIVADO betwise-datos (no se ejecuta en el repositorio público).
+# Corre a diario 11:17 UTC (6:17 a. m. hora Colombia; se evita el inicio de la hora, que GitHub
+# indica como de alta carga). Secretos necesarios en el repositorio privado:
+#   ODDSPAPI_KEY, FOOTBALLDATA_KEY
+name: betwise-diario
+
+on:
+  schedule:
+    - cron: "17 11 * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: betwise-diario
+  cancel-in-progress: false
+
+jobs:
+  diario:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Repositorio de datos (este, privado)
+        uses: actions/checkout@v4
+
+      - name: Código (repositorio público)
+        uses: actions/checkout@v4
+        with:
+          repository: USUARIO_GITHUB/betwise
+          path: code
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Instalar
+        run: pip install -e code
+
+      - name: Pronosticar y liquidar
+        env:
+          ODDSPAPI_KEY: ${{ secrets.ODDSPAPI_KEY }}
+          FOOTBALLDATA_KEY: ${{ secrets.FOOTBALLDATA_KEY }}
+        run: python code/scripts/daily_run.py --ledger ledger/betwise.db
+
+      - name: Guardar el libro (solo se agregan filas)
+        run: |
+          git config user.name "betwise-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add ledger/betwise.db
+          git diff --cached --quiet || git commit -m "Libro: corrida $(date -u +%Y-%m-%dT%H:%MZ)"
+          git push
