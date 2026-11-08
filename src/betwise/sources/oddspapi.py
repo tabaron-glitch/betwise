@@ -76,6 +76,8 @@ class Client:
                 self.billable_calls += 1
             return json.loads(body) if body else None
         except urllib.error.HTTPError as e:
+            if billable:  # por prudencia: una respuesta con error también puede descontar
+                self.billable_calls += 1
             if e.code == 404:
                 return None
             raise OddsPapiError(f"HTTP {e.code} en {safe}") from None
