@@ -65,6 +65,18 @@ Los nombres de equipos se traducen con `data/team_names.csv`; si aparece uno sin
 - Nunca subir claves (`.env` está ignorado) ni datos descargados (`data/raw/`: copyright de terceros y términos de OddsPapi).
 - Los resultados reales del backtest se publican como `predicciones_backtest.csv` solo si decides hacerlo.
 
-## Siguiente (fase 1)
+## Fase 1: registro hacia adelante
 
-Ledger inmutable de pronósticos, captura diaria de calendario/cuotas con GitHub Actions y panel Streamlit.
+Resultado de la fase 0 (ver `docs/protocolo_ajuste.md`): el modelo NO supera a Pinnacle sin margen.
+La fase 1 acumula una prueba limpia con partidos futuros.
+
+```bash
+python scripts/daily_run.py --ledger ledger/betwise.db   # pronostica (48 h) y liquida; 2 consultas OddsPapi
+python scripts/report.py --ledger ledger/betwise.db --csv results/informe_fase1.csv
+```
+
+- `src/betwise/ledger.py`: libro SQLite solo de inserciones, con huella SHA-256 encadenada.
+- `src/betwise/daily.py`: pronósticos antes del inicio; liquidación con cuota de apertura, al pronóstico y de cierre.
+- `deploy/betwise-datos/`: plantilla de GitHub Actions para un repositorio PRIVADO de datos
+  (el libro contiene cuotas de OddsPapi, que no se pueden redistribuir).
+- Claves en `.env`: `ODDSPAPI_KEY`, `FOOTBALLDATA_KEY`.
