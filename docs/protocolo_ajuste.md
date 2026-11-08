@@ -42,10 +42,11 @@ Criterio sin cambios: hay evidencia a favor del modelo solo si z > 2.
 
 ## Resultado (8-nov-2026)
 
-- Validación: 1.910 partidos, 48 combinaciones. Log loss entre 0,9663 y ~0,98.
+- Validación: 1.910 partidos, 48 combinaciones. Log loss entre 0,9663 y 0,9958.
 - Mejor: xi=0.0019, reg=1, ventana=1460 → 0,9663, mejora frente a la actual de 0,0016
   con EE 0,0018. **Menor que 1 EE: por regla se conserva la configuración actual.**
-- La superficie es plana (diferencias ≤ 0,002), mientras la brecha contra el mercado en la
+- Cerca del óptimo la superficie es plana (las 8 mejores difieren ≤ 0,0016; regularización
+  fuerte o decaimiento rápido empeoran hasta 0,028), mientras la brecha contra el mercado en la
   prueba es 0,022: ajustar estos parámetros no puede cerrarla.
 - Como la configuración elegida es la misma de la primera corrida, la prueba final es esa
   corrida (log loss modelo 1,0269 vs mercado 1,0049, z = −1,95). No se hizo otra mirada.
