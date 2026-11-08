@@ -30,6 +30,9 @@ def main():
     ap.add_argument("--test-start", default="2026-01-17")
     ap.add_argument("--test-end", default=None)
     ap.add_argument("--step-days", type=int, default=14)
+    ap.add_argument("--xi", type=float, default=0.0023, help="decaimiento diario del peso")
+    ap.add_argument("--reg", type=float, default=0.05, help="regularización de ataque/defensa")
+    ap.add_argument("--window-days", type=int, default=1460, help="ventana de entrenamiento")
     ap.add_argument("--synthetic", action="store_true")
     ap.add_argument("--out", default="results")
     a = ap.parse_args()
@@ -51,7 +54,10 @@ def main():
         matches = load_matches(a.leagues, seasons, refresh_seasons=[seasons[-1]])
         test_start = a.test_start
 
-    preds = walk_forward(matches, test_start=test_start, test_end=a.test_end, step_days=a.step_days)
+    print(f"Parámetros: xi={a.xi}, reg={a.reg}, ventana={a.window_days} días
+")
+    preds = walk_forward(matches, test_start=test_start, test_end=a.test_end, step_days=a.step_days,
+                         xi=a.xi, reg=a.reg, window_days=a.window_days)
     out = Path(a.out)
     out.mkdir(exist_ok=True)
     preds.to_csv(out / ("predicciones_sinteticas.csv" if a.synthetic else "predicciones_backtest.csv"), index=False)
