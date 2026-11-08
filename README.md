@@ -15,8 +15,11 @@ pytest                                   # 13 pruebas (incluye prueba de no-fuga
 # Prueba de tubería con datos SINTÉTICOS (no son resultados reales)
 python scripts/run_backtest.py --synthetic
 
-# Backtest con datos REALES (descarga CSV de football-data.co.uk, requiere internet)
-python scripts/run_backtest.py --leagues E0 SP1 --test-start 2024-08-01
+# Backtest con datos REALES
+#   resultados: openfootball (dominio público, CC0)
+#   cuotas de cierre de Pinnacle: OddsPapi (plan gratis; clave en .env: ODDSPAPI_KEY=...)
+python scripts/update_odds.py --leagues E0 SP1 --start 2026-01-01   # la 1.ª vez tarda ~1 h
+python scripts/run_backtest.py --leagues E0 SP1 --test-start 2026-01-17
 
 # Pronóstico de un partido con las cuotas que tú ves (nunca se inventan cuotas)
 python scripts/predict_match.py --league E0 --home Arsenal --away Chelsea --odds 1.95 3.60 4.00
@@ -47,9 +50,19 @@ python scripts/predict_match.py --league E0 --home Arsenal --away Chelsea --odds
 - Los CSV tienen cuotas de varias casas y temporadas: verifica qué columnas trae cada liga/temporada (`odds_source`).
 - Temporadas 2020/21 (sin público) tienen ventaja local atípica; el peso temporal lo atenúa, pero conviene revisarlo.
 
+## Fuentes de datos
+
+| Fuente | Qué aporta | Notas |
+|---|---|---|
+| openfootball/football.json | Resultados desde 2010/11 | CC0. Se corrige un año mal escrito en Premier 2019/20 y se descartan partidos sin marcador. Se actualiza con semanas de retraso. |
+| OddsPapi | Cuota de cierre de Pinnacle (1X2, más/menos 2,5, ambos anotan) | Histórico desde mediados de enero de 2026. Términos prohíben redistribuir: todo queda en `data/raw/`. |
+| football-data.co.uk | Resultados y cuotas desde 1993 | Bloqueado en Colombia por Coljuegos. El lector sigue en `data.py`, sin uso, hasta tener concepto legal. |
+
+Los nombres de equipos se traducen con `data/team_names.csv`; si aparece uno sin equivalencia el programa se detiene.
+
 ## Reglas del repositorio público
 
-- Nunca subir claves (`.env` está ignorado) ni los CSV descargados (`data/raw/`, el sitio reclama copyright).
+- Nunca subir claves (`.env` está ignorado) ni datos descargados (`data/raw/`: copyright de terceros y términos de OddsPapi).
 - Los resultados reales del backtest se publican como `predicciones_backtest.csv` solo si decides hacerlo.
 
 ## Siguiente (fase 1)
