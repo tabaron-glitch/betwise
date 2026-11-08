@@ -1,0 +1,10 @@
+# Repositorio PÚBLICO: nunca subir claves ni datos de terceros
+.env
+*.key
+data/raw/
+results/
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+*.egg-info/
