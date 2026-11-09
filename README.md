@@ -35,6 +35,13 @@ privado `betwise-datos` (carpeta vecina; otra ruta con la variable `BETWISE_DATO
 No se publica en internet: el libro contiene cuotas de OddsPapi, que no se pueden redistribuir.
 Requiere `pip install -e .[panel]`.
 
+- **Veredicto:** cada pronóstico muestra uno. Mientras el modelo no le gane al mercado fuera de muestra,
+  es siempre **NO APOSTAR** (`panel_data.EVIDENCE`); los umbrales de valor A–E se calibran solo después.
+- **Simulación (dinero ficticio, `simulation.py`):** con las cuotas que escribes, reglas fijas declaradas de
+  antemano (probabilidad − 3 pp, 1/4 de Kelly con tope 2 %, 5 % diario, 10 % semanal, pausa con caída de
+  15 %, sin martingala). Cuaderno de solo agregar en `simulacion/cuaderno.db`, local y fuera de git.
+  Marcado siempre «SIMULADO – NO ES RECOMENDACIÓN».
+
 ## Qué hay
 
 | Archivo | Función |

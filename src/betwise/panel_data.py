@@ -89,3 +89,19 @@ def forecast(results: pd.DataFrame, div: str, home: str, away: str, now, odds=No
         out.update(odds=o, margin=overround(o), market=remove_margin(o),
                    ev=np.array([expected_value(pi, oi) for pi, oi in zip(p, o)]))
     return out
+
+
+# Evidencia vigente (docs/protocolo_ajuste.md). Solo cambia con una nueva evaluación fuera de muestra.
+EVIDENCE = {"validado": False, "n": 479, "z": -1.95, "periodo": "ene–sep 2026",
+            "roi_simulado": "entre −7 % y −8 %"}
+
+
+def verdict(evidence: dict = EVIDENCE) -> tuple[str, str]:
+    """Veredicto para cualquier partido: mientras el modelo no esté validado, siempre NO APOSTAR."""
+    if not evidence["validado"]:
+        return ("NO APOSTAR",
+                f"El modelo no le ha ganado al mercado: en {evidence['n']} partidos reales "
+                f"({evidence['periodo']}) acertó peor que las casas (z = {evidence['z']:+.2f}) y apostar con "
+                f"él habría dado {evidence['roi_simulado']}. Sin ventaja demostrada, ninguna apuesta "
+                "tiene respaldo.")
+    raise NotImplementedError("Los umbrales de valor (A–E) se calibran solo después de validar el modelo")

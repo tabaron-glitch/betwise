@@ -58,3 +58,11 @@ def test_forecast_igual_al_registro_y_valida_cuotas(results):
         forecast(results, "E0", "Team01", "Team02", NOW, odds=[1.0, 3.5, 4.0])
     with pytest.raises(ValueError):
         forecast(results, "E0", "Team01", "Team01", NOW)
+
+
+def test_veredicto_no_apostar_mientras_no_haya_validacion():
+    from betwise.panel_data import EVIDENCE, verdict
+    title, why = verdict()
+    assert title == "NO APOSTAR" and not EVIDENCE["validado"] and "479" in why
+    with pytest.raises(NotImplementedError):
+        verdict({**EVIDENCE, "validado": True})
