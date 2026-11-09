@@ -12,3 +12,4 @@ __pycache__/
 # El libro contiene cuotas de OddsPapi: va en el repositorio PRIVADO de datos, nunca aquí
 *.db
 ledger/
+.claude/

@@ -11,6 +11,7 @@ dependencies = ["numpy", "pandas", "scipy"]
 
 [project.optional-dependencies]
 dev = ["pytest"]
+panel = ["streamlit>=1.40"]
 
 [tool.setuptools.packages.find]
 where = ["src"]

@@ -26,6 +26,15 @@ python scripts/run_backtest.py --leagues E0 SP1 --test-start 2026-01-17
 python scripts/predict_match.py --league E0 --home "Man City" --away Arsenal --odds 1.95 3.60 4.00
 ```
 
+## Panel visual (solo en tu computador)
+
+Doble clic en `abrir_panel.bat` (o `.venv/Scripts/streamlit run app/panel.py`). Se abre en el navegador
+en http://localhost:8501 y tiene tres pestañas: pronosticar un partido (consulta, no se registra), el
+libro de pronósticos y el informe modelo vs mercado. Lee el libro desde la copia local del repositorio
+privado `betwise-datos` (carpeta vecina; otra ruta con la variable `BETWISE_DATOS`) y nunca lo modifica.
+No se publica en internet: el libro contiene cuotas de OddsPapi, que no se pueden redistribuir.
+Requiere `pip install -e .[panel]`.
+
 ## Qué hay
 
 | Archivo | Función |
