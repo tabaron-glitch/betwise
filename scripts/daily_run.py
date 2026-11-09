@@ -16,15 +16,8 @@ from betwise import daily
 from betwise.ledger import Ledger
 from betwise.sources import footballdata_org as fd
 from betwise.sources import oddspapi as op
-from betwise.sources.openfootball import load_results, season_teams
-from betwise.teams import to_canonical
 
 DIVS = ["E0", "SP1"]
-
-
-def season_codes(now: pd.Timestamp, n_back: int = 5) -> list[str]:
-    y = now.year if now.month >= 7 else now.year - 1
-    return [f"{(y - k) % 100:02d}{(y - k + 1) % 100:02d}" for k in range(n_back, -1, -1)]
 
 
 def main():
@@ -34,21 +27,8 @@ def main():
     a = ap.parse_args()
     now = pd.Timestamp(a.now) if a.now else pd.Timestamp.now(tz="UTC")
     now = now.tz_localize("UTC") if now.tzinfo is None else now
-    seasons = season_codes(now)
-    current = seasons[-1]
-
     # 1. Resultados: openfootball (histórico) + football-data.org (temporada en curso, al día)
-    of = load_results(DIVS, seasons, refresh_seasons=[current])
-    canon = {d: set().union(*(season_teams(d, s) for s in seasons)) for d in DIVS}
-    fdc = fd.Client(fd.load_key())
-    season_start = f"20{current[:2]}-07-01"
-    extra = []
-    for d in DIVS:
-        r = fd.finished_matches(fdc, d, season_start, str((now + pd.Timedelta(days=1)).date()))
-        r["home"] = to_canonical(r["home"], "footballdata", d, canon[d])
-        r["away"] = to_canonical(r["away"], "footballdata", d, canon[d])
-        extra.append(r)
-    results = daily.combine_results(of, pd.concat(extra, ignore_index=True))
+    results, canon, _ = daily.load_all_results(DIVS, now, fd.Client(fd.load_key()))
     print(f"Resultados: hasta {results['date'].max().date()} ({len(results)} partidos)")
 
     # 2. Calendario, pronósticos y liquidación

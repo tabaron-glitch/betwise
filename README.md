@@ -22,7 +22,8 @@ python scripts/update_odds.py --leagues E0 SP1 --start 2026-01-01   # la 1.ª ve
 python scripts/run_backtest.py --leagues E0 SP1 --test-start 2026-01-17
 
 # Pronóstico de un partido con las cuotas que tú ves (nunca se inventan cuotas)
-python scripts/predict_match.py --league E0 --home Arsenal --away Chelsea --odds 1.95 3.60 4.00
+#   nombres libres ("Man City", "atletico"); usa openfootball + football-data.org (FOOTBALLDATA_KEY)
+python scripts/predict_match.py --league E0 --home "Man City" --away Arsenal --odds 1.95 3.60 4.00
 ```
 
 ## Qué hay
@@ -30,7 +31,7 @@ python scripts/predict_match.py --league E0 --home Arsenal --away Chelsea --odds
 | Archivo | Función |
 |---|---|
 | `src/betwise/odds.py` | Probabilidad implícita, margen, EV, cuota justa y mínima, Kelly fraccionado con tope |
-| `src/betwise/data.py` | Descarga con caché y estandarización de CSV; elige cuotas fila a fila (Pinnacle cierre > promedio cierre > Bet365...) |
+| `src/betwise/data.py` | Lector de CSV de football-data.co.uk (bloqueado en Colombia; sin uso hasta tener concepto legal) |
 | `src/betwise/dixon_coles.py` | Modelo Dixon-Coles con peso temporal, matriz de marcadores y mercados derivados (1X2, totales, ambos anotan, marcadores) |
 | `src/betwise/backtest.py` | Walk-forward sin fuga, Brier, log loss, calibración, prueba pareada contra el mercado |
 | `src/betwise/synthetic.py` | Datos simulados solo para probar el código |

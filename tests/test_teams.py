@@ -29,3 +29,23 @@ def test_tabla_del_proyecto_es_valida_y_utf8():
     t = load_table()
     assert set(t.columns) == {"source", "div", "source_name", "canonical"}
     assert "Real Betis Balompié" in set(t.canonical)  # tildes leídas bien
+
+
+from betwise.teams import resolve_user_team  # noqa: E402
+
+E0 = {"Manchester City FC", "Manchester United FC", "Arsenal FC", "Nottingham Forest FC"}
+
+
+def test_resuelve_nombre_de_persona_sin_tildes_ni_mayusculas():
+    assert resolve_user_team("atletico madrid", CANON, "SP1", TABLE) == "Club Atlético de Madrid"
+    assert resolve_user_team("Betis", CANON, "SP1", TABLE) == "Real Betis Balompié"
+    assert resolve_user_team("Man City", E0, "E0", TABLE) == "Manchester City FC"
+    assert resolve_user_team("arsenal", E0, "E0", TABLE) == "Arsenal FC"
+    assert resolve_user_team("Nottm Forest".replace("Nottm", "Nott"), E0, "E0", TABLE) == "Nottingham Forest FC"
+
+
+def test_ambiguo_o_desconocido_lanza_error_con_opciones():
+    with pytest.raises(UnknownTeamError, match="ambiguo"):
+        resolve_user_team("Manchester", E0, "E0", TABLE)
+    with pytest.raises(UnknownTeamError, match="Arsenal FC"):
+        resolve_user_team("Chelsea", E0, "E0", TABLE)

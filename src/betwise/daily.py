@@ -135,3 +135,50 @@ def settle(ledger: Ledger, results: pd.DataFrame, get_hist, now, source: str = "
                                              quote_time=q["quote_time"] or None, **vals))
             rep["cuotas_nuevas"] += 1
     return rep
+
+
+def season_codes(now, n_back: int = 5) -> list[str]:
+    """Códigos de temporada ('2627') desde n_back temporadas atrás hasta la actual (inicia en julio)."""
+    now = pd.Timestamp(now)
+    y = now.year if now.month >= 7 else now.year - 1
+    return [f"{(y - k) % 100:02d}{(y - k + 1) % 100:02d}" for k in range(n_back, -1, -1)]
+
+
+def load_all_results(divs, now, fd_client=None, verbose: bool = True):
+    """Resultados para entrenar: openfootball (histórico, CC0) + football-data.org (temporada en curso).
+
+    Devuelve (results, canon, current_teams): canon = {div: nombres canónicos de las temporadas
+    cargadas}; current_teams = {div: equipos de la temporada actual}. Sin fd_client, solo openfootball.
+    """
+    from .sources import footballdata_org as fd
+    from .sources.openfootball import load_results, season_teams
+
+    seasons = season_codes(now)
+    current = seasons[-1]
+    of = load_results(divs, seasons, refresh_seasons=[current], verbose=verbose)
+    canon = {d: set().union(*(season_teams(d, s) for s in seasons)) for d in divs}
+    current_teams = {d: season_teams(d, current) for d in divs}
+    extra = []
+    if fd_client is not None:
+        start = f"20{current[:2]}-07-01"
+        end = str((_utc(now) + pd.Timedelta(days=1)).date())
+        for d in divs:
+            r = fd.finished_matches(fd_client, d, start, end)
+            r["home"] = to_canonical(r["home"], "footballdata", d, canon[d])
+            r["away"] = to_canonical(r["away"], "footballdata", d, canon[d])
+            extra.append(r)
+    results = combine_results(of, pd.concat(extra, ignore_index=True) if extra else None)
+    return results, canon, current_teams
+
+
+def fit_for_cutoff(results: pd.DataFrame, div: str, cutoff, params: dict = PARAMS):
+    """Ajusta el modelo de una liga con resultados de fecha < cutoff (día), dentro de la ventana.
+
+    Es la misma regla que usa el registro diario: nada del día del pronóstico ni posterior."""
+    cutoff = pd.Timestamp(cutoff).normalize()
+    cutoff = cutoff.tz_localize(None) if cutoff.tzinfo is not None else cutoff
+    tr = results[(results["div"] == div) & (results["date"] < cutoff)
+                 & (results["date"] >= cutoff - pd.Timedelta(days=params["window_days"]))]
+    if tr.empty:
+        raise ValueError(f"No hay resultados de {div} antes de {cutoff.date()}")
+    return fit(tr, ref_date=cutoff, xi=params["xi"], reg=params["reg"]), tr["date"].max()

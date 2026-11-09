@@ -44,3 +44,47 @@ def to_canonical(names, source: str, div: str, canonical: set, table: pd.DataFra
             + (f" (ojo, destinos que no existen en openfootball: {bad_targets})" if bad_targets else "")
         )
     return out
+
+
+def _norm(s: str) -> str:
+    import unicodedata
+    s = unicodedata.normalize("NFKD", str(s)).encode("ascii", "ignore").decode()
+    return " ".join("".join(c if c.isalnum() else " " for c in s.lower()).split())
+
+
+def resolve_user_team(query: str, canonical: set, div: str | None = None,
+                      table: pd.DataFrame | None = None) -> str:
+    """Nombre escrito por una persona -> nombre canónico, sin adivinar.
+
+    1) coincidencia exacta (sin mayúsculas ni tildes) con un canónico o con un alias de la tabla;
+    2) si no, cada palabra escrita debe ser el comienzo de una palabra del nombre
+       ("Man City" -> "Manchester City FC"). Debe quedar UN solo candidato; si hay
+       varios o ninguno, error con las opciones.
+    """
+    q = _norm(query)
+    if not q:
+        raise UnknownTeamError("Nombre de equipo vacío")
+    canonical = set(canonical)
+    aliases = {}
+    if table is not None or DEFAULT_TABLE.exists():
+        t = load_table() if table is None else table
+        if div is not None:
+            t = t[t["div"] == div]
+        for a, c in zip(t["source_name"], t["canonical"]):
+            if c in canonical:
+                aliases.setdefault(_norm(a), set()).add(c)
+    exact = {c for c in canonical if _norm(c) == q} | aliases.get(q, set())
+    if len(exact) == 1:
+        return exact.pop()
+    toks = q.split()
+
+    def ok(name):
+        words = _norm(name).split()
+        return all(any(w.startswith(tk) for w in words) for tk in toks)
+
+    cands = {c for c in canonical if ok(c)} | {c for a, cs in aliases.items() if ok(a) for c in cs}
+    if len(cands) == 1:
+        return cands.pop()
+    if cands:
+        raise UnknownTeamError(f"'{query}' es ambiguo; escribe uno de: {sorted(cands)}")
+    raise UnknownTeamError(f"No encuentro '{query}'. Equipos disponibles: {sorted(canonical)}")

@@ -102,3 +102,24 @@ def test_combine_results_prefiere_la_fuente_principal():
                       {"date": pd.Timestamp("2026-10-01"), "div": "E0", "home": "Y", "away": "X", "hg": 2, "ag": 2}])
     c = daily.combine_results(a, b)
     assert list(c.hg) == [1, 2]
+
+
+def test_season_codes():
+    assert daily.season_codes(pd.Timestamp("2026-11-08"), 2) == ["2425", "2526", "2627"]
+    assert daily.season_codes(pd.Timestamp("2027-03-01"), 1) == ["2526", "2627"]
+
+
+def test_fit_for_cutoff_sin_fuga_y_igual_al_registro_diario(tmp_path, results):
+    future = pd.DataFrame([{"date": pd.Timestamp("2022-03-01"), "div": "E0", "home": "Team01", "away": "Team03",
+                            "hg": 9, "ag": 0}])
+    m1, last1 = daily.fit_for_cutoff(results[results.date < "2022-03-01"], "E0", NOW)
+    m2, last2 = daily.fit_for_cutoff(pd.concat([results[results.date < "2022-03-01"], future]), "E0", NOW)
+    assert last1 == last2 < pd.Timestamp("2022-03-01")
+    assert (m1.score_matrix("Team01", "Team03") == m2.score_matrix("Team01", "Team03")).all()
+    with Ledger(tmp_path / "x.db") as l:
+        daily.predict_upcoming(l, [fx("ok", "2022-03-02T15:00:00Z")], results, canon(results), NOW, "v1",
+                               table=TABLE)
+        r = l.rows("pronosticos")[0]
+    from betwise.dixon_coles import outcome_probs
+    p = outcome_probs(m1.score_matrix("Team01", "Team02"))
+    assert abs(p[0] - r["p_h"]) < 1e-12 and abs(p[2] - r["p_a"]) < 1e-12
