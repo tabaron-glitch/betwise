@@ -67,11 +67,11 @@ def ledger_view(tables: dict) -> pd.DataFrame:
     return df.sort_values("kickoff", ascending=False).reset_index(drop=True)
 
 
-def forecast(results: pd.DataFrame, div: str, home: str, away: str, now, odds=None) -> dict:
+def forecast(results: pd.DataFrame, div: str, home: str, away: str, now, odds=None, fitted=None) -> dict:
     """Pronóstico de consulta (no se registra), con la misma regla sin fuga del registro diario."""
     if home == away:
         raise ValueError("Local y visitante son el mismo equipo")
-    model, last = daily.fit_for_cutoff(results, div, now)
+    model, last = fitted if fitted is not None else daily.fit_for_cutoff(results, div, now)
     m = model.score_matrix(home, away)
     p = outcome_probs(m)
     lam, mu = model.expected_goals(home, away)
@@ -105,3 +105,32 @@ def verdict(evidence: dict = EVIDENCE) -> tuple[str, str]:
                 f"él habría dado {evidence['roi_simulado']}. Sin ventaja demostrada, ninguna apuesta "
                 "tiene respaldo.")
     raise NotImplementedError("Los umbrales de valor (A–E) se calibran solo después de validar el modelo")
+
+
+def upcoming_board(calendar: pd.DataFrame, models: dict) -> pd.DataFrame:
+    """Calendario + probabilidades 1X2 del modelo y cuotas justas, para las tarjetas del panel.
+
+    models: {div: modelo ajustado con datos anteriores a hoy}. Hora local = Colombia."""
+    if calendar.empty:
+        return calendar.assign(p_h=[], p_d=[], p_a=[], local=[], conocidos=[])
+    rows = []
+    for _, r in calendar.iterrows():
+        model = models[r["div"]]
+        p = outcome_probs(model.score_matrix(r["home"], r["away"]))
+        rows.append({**r.to_dict(), "p_h": p[0], "p_d": p[1], "p_a": p[2],
+                     "local": r["kickoff"].tz_convert("America/Bogota"),
+                     "conocidos": model.knows(r["home"]) and model.knows(r["away"])})
+    return pd.DataFrame(rows).sort_values("kickoff").reset_index(drop=True)
+
+
+DIAS = ["lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo"]
+MESES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"]
+
+
+def day_label(ts, today) -> str:
+    d = ts.date()
+    if d == today:
+        return "Hoy"
+    if (d - today).days == 1:
+        return "Mañana"
+    return f"{DIAS[d.weekday()].capitalize()} {d.day} {MESES[d.month - 1]}"

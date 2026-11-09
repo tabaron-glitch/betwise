@@ -66,3 +66,22 @@ def test_veredicto_no_apostar_mientras_no_haya_validacion():
     assert title == "NO APOSTAR" and not EVIDENCE["validado"] and "479" in why
     with pytest.raises(NotImplementedError):
         verdict({**EVIDENCE, "validado": True})
+
+
+def test_tablero_de_proximos_partidos(results):
+    from betwise.panel_data import day_label, upcoming_board
+    model = daily.fit_for_cutoff(results, "E0", NOW)[0]
+    cal = pd.DataFrame([{"kickoff": pd.Timestamp("2022-03-02T20:00:00Z"), "div": "E0", "home": "Team01",
+                         "away": "Team02"},
+                        {"kickoff": pd.Timestamp("2022-03-02T01:00:00Z"), "div": "E0", "home": "Team03",
+                         "away": "Nuevo FC"}])
+    b = upcoming_board(cal, {"E0": model})
+    assert list(b.home) == ["Team03", "Team01"]
+    assert np.allclose(b[["p_h", "p_d", "p_a"]].sum(axis=1), 1)
+    assert b.iloc[0]["local"].day == 1 and b.iloc[0]["local"].hour == 20   # 01:00 UTC = 20:00 del día anterior
+    assert not b.iloc[0]["conocidos"] and b.iloc[1]["conocidos"]
+    today = pd.Timestamp("2022-03-01").date()
+    assert day_label(b.iloc[0]["local"], today) == "Hoy"
+    assert day_label(b.iloc[1]["local"], today) == "Mañana"
+    assert day_label(pd.Timestamp("2022-03-05"), today) == "Sábado 5 mar"
+    assert upcoming_board(cal.iloc[:0], {}).empty

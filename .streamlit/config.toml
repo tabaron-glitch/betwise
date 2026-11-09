@@ -6,3 +6,10 @@ gatherUsageStats = false
 
 [server]
 address = "localhost"
+
+[theme]
+base = "dark"
+primaryColor = "#19c3a0"
+backgroundColor = "#0b1220"
+secondaryBackgroundColor = "#131c2e"
+textColor = "#e8edf7"

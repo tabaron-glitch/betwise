@@ -46,3 +46,19 @@ def test_load_key(tmp_path, monkeypatch):
     env.write_text("FOOTBALLDATA_KEY=PEGA_AQUI_TU_CLAVE\n", encoding="utf-8")
     with pytest.raises(fd.FootballDataError):
         fd.load_key(env)
+
+
+def test_parse_programados():
+    data = {"matches": [
+        {"utcDate": "2026-11-21T15:00:00Z", "status": "TIMED", "matchday": 13,
+         "homeTeam": {"name": "Arsenal FC", "shortName": "Arsenal"}, "awayTeam": {"name": "Chelsea FC"}},
+        {"utcDate": "2026-11-20T20:00:00Z", "status": "SCHEDULED", "matchday": 13,
+         "homeTeam": {"name": "Athletic Club", "shortName": "Athletic"}, "awayTeam": {"name": "Sevilla FC"}},
+        {"utcDate": "2026-11-22T20:00:00Z", "status": "POSTPONED", "homeTeam": {"name": "X"}, "awayTeam": {"name": "Y"}},
+        {"utcDate": "2026-11-07T20:00:00Z", "status": "FINISHED", "homeTeam": {"name": "X"}, "awayTeam": {"name": "Y"}},
+        {"utcDate": "2026-12-22T20:00:00Z", "status": "SCHEDULED", "homeTeam": {"name": None}, "awayTeam": {"name": "Y"}},
+    ]}
+    df = fd.parse_scheduled(data, "E0")
+    assert list(df.home) == ["Athletic Club", "Arsenal FC"]          # ordenados por hora
+    assert df.iloc[1].away_short == "Chelsea FC" and bool(df.iloc[1].hora_confirmada)
+    assert not df.iloc[0].hora_confirmada and str(df.iloc[0].kickoff.tz) == "UTC"

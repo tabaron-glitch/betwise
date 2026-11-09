@@ -89,3 +89,27 @@ def finished_matches(client: Client, div: str, date_from: str, date_to: str,
     d.mkdir(parents=True, exist_ok=True)
     (d / f"{div}_{date_from}_{date_to}.json").write_text(json.dumps(data), encoding="utf-8")
     return parse_matches(data, div)
+
+
+def parse_scheduled(data: dict, div: str) -> pd.DataFrame:
+    """Partidos por jugar (SCHEDULED o TIMED) con hora de inicio UTC, jornada y nombre corto."""
+    rows = []
+    for m in data.get("matches", []):
+        if m.get("status") not in ("SCHEDULED", "TIMED"):
+            continue
+        h, a = m["homeTeam"], m["awayTeam"]
+        if not h.get("name") or not a.get("name"):
+            continue  # cruce aún sin definir
+        rows.append({"kickoff": pd.Timestamp(m["utcDate"]).tz_convert("UTC"), "div": div,
+                     "home": h["name"].strip(), "away": a["name"].strip(),
+                     "home_short": (h.get("shortName") or h["name"]).strip(),
+                     "away_short": (a.get("shortName") or a["name"]).strip(),
+                     "matchday": m.get("matchday"), "hora_confirmada": m["status"] == "TIMED"})
+    cols = ["kickoff", "div", "home", "away", "home_short", "away_short", "matchday", "hora_confirmada"]
+    return pd.DataFrame(rows, columns=cols).sort_values("kickoff").reset_index(drop=True)
+
+
+def scheduled_matches(client: Client, div: str, date_from: str, date_to: str) -> pd.DataFrame:
+    """Calendario de partidos por jugar entre dos fechas (no descuenta cupo mensual; 10/minuto)."""
+    data = client.get(f"competitions/{COMPETITIONS[div]}/matches", dateFrom=date_from, dateTo=date_to)
+    return parse_scheduled(data, div)
